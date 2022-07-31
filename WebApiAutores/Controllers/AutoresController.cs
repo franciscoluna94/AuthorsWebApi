@@ -74,7 +74,7 @@ namespace WebApiAutores.Controllers
         }
 
         [HttpPut("{id:int}")]
-        public async Task<ActionResult> Put(Autor autor, int id)
+        public async Task<ActionResult> Put(AutoCreacionDto autoCreacionDto, int id)
         {
             var existe = await _dataContext.Autores.AnyAsync(x => x.Id == id);
 
@@ -83,9 +83,11 @@ namespace WebApiAutores.Controllers
                 return NotFound();
             }
 
+            var autor = _mapper.Map<Autor>(autoCreacionDto);
+            autor.Id = id;
             _dataContext.Update(autor);
             await _dataContext.SaveChangesAsync();
-            return Ok();
+            return NoContent();
         }
 
         [HttpDelete("{id:int}")]
@@ -101,7 +103,7 @@ namespace WebApiAutores.Controllers
 
             _dataContext.Remove(new Autor() { Id = id });
             await _dataContext.SaveChangesAsync();
-            return Ok();
+            return NoContent();
         }
 
 
