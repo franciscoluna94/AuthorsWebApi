@@ -1,4 +1,5 @@
 ﻿using AutoMapper;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -10,19 +11,21 @@ namespace WebApiAutores.Controllers
 {
     [ApiController]
     [Route("api/autores")]
-    //[Authorize]
     public class AutoresController : ControllerBase
     {
         private readonly DataContext _dataContext;
         private readonly IMapper _mapper;
+        private readonly IConfiguration _configuration;
 
-        public AutoresController(DataContext context, IMapper mapper)
+        public AutoresController(DataContext context, IMapper mapper, IConfiguration configuration)
         {
             _dataContext = context;
             _mapper = mapper;
+            _configuration = configuration;
         }
 
         [HttpGet]
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
         public async Task<ActionResult<List<AutorDto>>> Get()
         {
             var autores = await _dataContext.Autores.ToListAsync();
@@ -30,7 +33,7 @@ namespace WebApiAutores.Controllers
         }
 
 
-        [HttpGet("{id:int}", Name  = "obtenerAutor")]
+        [HttpGet("{id:int}", Name = "obtenerAutor")]
         public async Task<ActionResult<AutorDtoConLibros>> Get(int id)
         {
             var autor = await _dataContext.Autores
@@ -70,7 +73,7 @@ namespace WebApiAutores.Controllers
             await _dataContext.AddAsync(autor);
             await _dataContext.SaveChangesAsync();
             var autorDto = _mapper.Map<AutorDto>(autor);
-            return  CreatedAtRoute("obtenerAutor", new {id = autor.Id}, autorDto);
+            return CreatedAtRoute("obtenerAutor", new { id = autor.Id }, autorDto);
         }
 
         [HttpPut("{id:int}")]
