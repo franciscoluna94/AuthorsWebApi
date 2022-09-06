@@ -39,7 +39,7 @@ namespace WebApiAutores.Controllers
             return _mapper.Map<LibroDtoConAutores>(libro);
         }
 
-        [HttpPost()]
+        [HttpPost(Name = "crearLibro")]
         public async Task<ActionResult> Put(LibroCreacionDto libroCreacionDto)
         {
 
@@ -66,7 +66,7 @@ namespace WebApiAutores.Controllers
             return CreatedAtRoute("obtenerLibro", new { id = libro.Id }, libroDto);
         }
 
-        [HttpPut("{id:int}")]
+        [HttpPut("{id:int}", Name = "actualizarLibro")]
         public async Task<ActionResult> Put(int id, LibroCreacionDto libroCreacionDto)
         {
             var libroDb = await _dataContext.Libros
@@ -86,7 +86,7 @@ namespace WebApiAutores.Controllers
             return NoContent();
         }
 
-        [HttpPatch("{id:int}")]
+        [HttpPatch("{id:int}", Name = "patchLibro")]
         public async Task<ActionResult> Patch(int id, JsonPatchDocument<LibroPatchDto> patchDocument)
         {
             if (patchDocument == null)
@@ -118,7 +118,7 @@ namespace WebApiAutores.Controllers
             return NoContent();
         }
 
-        [HttpDelete("{id:int}")]
+        [HttpDelete("{id:int}", Name = "borrarLibro")]
         public async Task<ActionResult> Delete(int id)
         {
 

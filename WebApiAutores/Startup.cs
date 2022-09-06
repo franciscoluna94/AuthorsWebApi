@@ -1,13 +1,16 @@
 ﻿using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Mvc.Infrastructure;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using System.IdentityModel.Tokens.Jwt;
 using System.Text;
 using System.Text.Json.Serialization;
 using WebApiAutores.Data;
 using WebApiAutores.Filtros;
 using WebApiAutores.Middlewares;
+using WebApiAutores.Servicios;
 
 namespace WebApiAutores;
 
@@ -16,6 +19,7 @@ public class Startup
 
     public Startup(IConfiguration configuration)
     {
+        JwtSecurityTokenHandler.DefaultInboundClaimTypeMap.Clear();
         Configuration = configuration;
     }
 
@@ -34,19 +38,21 @@ public class Startup
         services.AddDbContext<DataContext>(options => options.UseSqlServer(Configuration.GetConnectionString("defaultConnection")));
 
         services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-            .AddJwtBearer(options => options.TokenValidationParameters = new TokenValidationParameters
-            {
-                ValidateIssuer = false,
-                ValidateAudience = false,
-                ValidateLifetime = true,
-                ValidateIssuerSigningKey = true,
-                IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(Configuration["llavejwt"])),
-                ClockSkew = TimeSpan.Zero
-            });
+               .AddJwtBearer(opciones => opciones.TokenValidationParameters = new TokenValidationParameters
+               {
+                   ValidateIssuer = false,
+                   ValidateAudience = false,
+                   ValidateLifetime = true,
+                   ValidateIssuerSigningKey = true,
+                   IssuerSigningKey = new SymmetricSecurityKey(
+                     Encoding.UTF8.GetBytes(Configuration["llavejwt"])),
+                   ClockSkew = TimeSpan.Zero
+               });
 
         services.AddSwaggerGen(c =>
         {
-            c.SwaggerDoc("v1", new OpenApiInfo { Title = "WebApiAutores", Version = "v1" });
+            c.SwaggerDoc("v1", new OpenApiInfo { Title = "WebAPIAutores", Version = "v1" });
+
             c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
             {
                 Name = "Authorization",
@@ -55,26 +61,48 @@ public class Startup
                 BearerFormat = "JWT",
                 In = ParameterLocation.Header
             });
+
             c.AddSecurityRequirement(new OpenApiSecurityRequirement
-            {
                 {
-                    new OpenApiSecurityScheme
                     {
-                    Reference = new OpenApiReference
+                        new OpenApiSecurityScheme
                         {
-                            Type = ReferenceType.SecurityScheme,
-                            Id = "Bearer"
-                        }
-                     },
-                    new string[]{}
-                }
-            });
+                            Reference = new OpenApiReference
+                            {
+                                Type = ReferenceType.SecurityScheme,
+                                Id = "Bearer"
+                            }
+                        },
+                        new string[]{}
+                    }
+                });
+
         });
+
 
         services.AddAutoMapper(typeof(Startup));
         services.AddIdentity<IdentityUser, IdentityRole>()
             .AddEntityFrameworkStores<DataContext>()
             .AddDefaultTokenProviders();
+
+        services.AddAuthorization(opciones =>
+        {
+            opciones.AddPolicy("EsAdmin", politica => politica.RequireClaim("EsAdmin"));
+        });
+
+        services.AddCors(opciones =>
+        {
+            opciones.AddDefaultPolicy(builder =>
+            {
+                builder.WithOrigins("https://apirequest.io").AllowAnyMethod().AllowAnyHeader().WithExposedHeaders();
+            });
+        });
+
+        services.AddDataProtection();
+        services.AddTransient<HashService>();
+        services.AddTransient<GeneradorEnlaces>();
+        services.AddTransient<HateOasAutoresFilterAttribute>();
+        services.AddSingleton<IActionContextAccessor, ActionContextAccessor>();
     }
 
     public void Configure(IApplicationBuilder app, IWebHostEnvironment env, ILogger<Startup> logger)
@@ -95,6 +123,8 @@ public class Startup
         app.UseHttpsRedirection();
 
         app.UseRouting();
+
+        app.UseCors();
 
         app.UseAuthorization();
 
