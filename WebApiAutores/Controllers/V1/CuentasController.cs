@@ -10,10 +10,10 @@ using System.Text;
 using WebApiAutores.DTOs;
 using WebApiAutores.Servicios;
 
-namespace WebApiAutores.Controllers;
+namespace WebApiAutores.Controllers.V1;
 
 [ApiController]
-[Route("api/cuentas")]
+[Route("api/v1/cuentas")]
 public class CuentasController : ControllerBase
 {
     private readonly UserManager<IdentityUser> _userManager;
@@ -22,7 +22,7 @@ public class CuentasController : ControllerBase
     private readonly HashService _hashService;
     private readonly IDataProtector _dataProtector;
 
-    public CuentasController(UserManager<IdentityUser> userManager, IConfiguration config, SignInManager<IdentityUser> signInManager, 
+    public CuentasController(UserManager<IdentityUser> userManager, IConfiguration config, SignInManager<IdentityUser> signInManager,
         IDataProtectionProvider dataProtectionProvider, HashService hashService)
     {
         _userManager = userManager;
@@ -40,7 +40,7 @@ public class CuentasController : ControllerBase
 
         return Ok(new
         {
-            textoPlano = textoPlano,
+            textoPlano,
             hash1 = resultado1,
             hash2 = resultado2
         });
@@ -57,7 +57,7 @@ public class CuentasController : ControllerBase
         if (resultado.Succeeded)
         {
             return await ConstruirToken(credencialesUsuario);
-        } 
+        }
         else
         {
             return BadRequest(resultado.Errors);
@@ -65,15 +65,15 @@ public class CuentasController : ControllerBase
     }
 
     [HttpPost("login", Name = "loginUsuario")]
-    public async Task <ActionResult<RespuestaAutenticacion>> Login (CredencialesUsuario credencialesUsuario)
+    public async Task<ActionResult<RespuestaAutenticacion>> Login(CredencialesUsuario credencialesUsuario)
     {
-        var resultado = await _signInManager.PasswordSignInAsync(credencialesUsuario.Email, 
+        var resultado = await _signInManager.PasswordSignInAsync(credencialesUsuario.Email,
             credencialesUsuario.Password, isPersistent: false, lockoutOnFailure: false);
 
         if (resultado.Succeeded)
         {
             return await ConstruirToken(credencialesUsuario);
-        } 
+        }
         else
         {
             return BadRequest("Login incorrecto");
@@ -110,7 +110,7 @@ public class CuentasController : ControllerBase
         return NoContent();
     }
 
-    private async Task<RespuestaAutenticacion> ConstruirToken (CredencialesUsuario credencialesUsuario)
+    private async Task<RespuestaAutenticacion> ConstruirToken(CredencialesUsuario credencialesUsuario)
     {
         var claims = new List<Claim>()
         {
@@ -129,9 +129,9 @@ public class CuentasController : ControllerBase
         var securityToken = new JwtSecurityToken(issuer: null, audience: null, claims: claims, expires: expiracion, signingCredentials: creds);
 
         return new RespuestaAutenticacion()
-        { 
-            Token = new JwtSecurityTokenHandler().WriteToken(securityToken), 
-            Expiracion = expiracion 
+        {
+            Token = new JwtSecurityTokenHandler().WriteToken(securityToken),
+            Expiracion = expiracion
         };
     }
 

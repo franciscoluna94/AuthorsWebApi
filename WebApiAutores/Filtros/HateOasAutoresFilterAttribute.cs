@@ -28,9 +28,17 @@ namespace WebApiAutores.Filtros
 
             var resultado = context.Result as ObjectResult;
 
-            var modelo = resultado.Value as AutorDto ?? throw new ArgumentException("Se esperaba una instancia de AutorDto");
+            var autorDto = resultado.Value as AutorDto;
 
-            await _generadorEnlaces.GenerarEnlaces(modelo);
+            if (autorDto is null)
+            {
+                var autoresDto = resultado.Value as List<AutorDto> ?? throw new ArgumentException("Se esperaba un AutorDTO o un listado");
+                autoresDto.ForEach(async autor => await _generadorEnlaces.GenerarEnlaces(autor));
+                resultado.Value = autoresDto;
+            } else
+            {
+                await _generadorEnlaces.GenerarEnlaces(autorDto);
+            }            
 
             await next();
         }

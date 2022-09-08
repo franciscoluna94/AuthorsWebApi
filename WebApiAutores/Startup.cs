@@ -11,6 +11,7 @@ using WebApiAutores.Data;
 using WebApiAutores.Filtros;
 using WebApiAutores.Middlewares;
 using WebApiAutores.Servicios;
+using WebApiAutores.Utilidades;
 
 namespace WebApiAutores;
 
@@ -30,6 +31,7 @@ public class Startup
         services.AddControllers(opciones =>
         {
             opciones.Filters.Add(typeof(ExceptionFilter));
+            opciones.Conventions.Add(new SwaggerAgrupaPorVersion());
         }).AddJsonOptions(x =>
         x.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles).AddNewtonsoftJson();
         services.AddEndpointsApiExplorer();
@@ -52,6 +54,9 @@ public class Startup
         services.AddSwaggerGen(c =>
         {
             c.SwaggerDoc("v1", new OpenApiInfo { Title = "WebAPIAutores", Version = "v1" });
+            c.SwaggerDoc("v2", new OpenApiInfo { Title = "WebAPIAutores", Version = "v2" });
+            c.OperationFilter<AgregarParametroHateOas>();
+            c.OperationFilter<AgregarParametroXVersion>();
 
             c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
             {
@@ -118,7 +123,10 @@ public class Startup
         }
 
         app.UseSwagger();
-        app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "WebAPIAutores v1"));
+        app.UseSwaggerUI(c => {
+            c.SwaggerEndpoint("/swagger/v1/swagger.json", "WebAPIAutores v1");
+            c.SwaggerEndpoint("/swagger/v2/swagger.json", "WebAPIAutores v2");
+        });
 
         app.UseHttpsRedirection();
 

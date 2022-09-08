@@ -8,10 +8,10 @@ using WebApiAutores.Data;
 using WebApiAutores.DTOs;
 using WebApiAutores.Entities;
 
-namespace WebApiAutores.Controllers
+namespace WebApiAutores.Controllers.V1
 {
     [ApiController]
-    [Route("api/libros/{libroId:int}/comentarios")]
+    [Route("api/v1/libros/{libroId:int}/comentarios")]
     public class ComentariosController : ControllerBase
     {
         private readonly DataContext _dataContext;
@@ -77,7 +77,7 @@ namespace WebApiAutores.Controllers
             await _dataContext.SaveChangesAsync();
 
             var comentarioDto = _mapper.Map<ComentarioDto>(comentario);
-            return CreatedAtRoute("obtenerComentario", new { id = comentario.Id, libroId = libroId }, comentarioDto);
+            return CreatedAtRoute("obtenerComentario", new { id = comentario.Id, libroId }, comentarioDto);
         }
 
         [HttpPut("{id:int}", Name = "actualizarComentario")]

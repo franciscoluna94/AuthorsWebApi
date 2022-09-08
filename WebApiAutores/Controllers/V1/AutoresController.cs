@@ -7,11 +7,13 @@ using WebApiAutores.Data;
 using WebApiAutores.DTOs;
 using WebApiAutores.Entities;
 using WebApiAutores.Filtros;
+using WebApiAutores.Utilidades;
 
-namespace WebApiAutores.Controllers
+namespace WebApiAutores.Controllers.V1
 {
     [ApiController]
     [Route("api/autores")]
+    [CabeceraEstaPresente("x-version", "1")]
     [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "EsAdmin")]
     public class AutoresController : ControllerBase
     {
@@ -26,41 +28,21 @@ namespace WebApiAutores.Controllers
             _authorizationService = authorizationService;
         }
 
-        [HttpGet(Name = "obtenerAutores")]
+        [HttpGet(Name = "obtenerAutoresv1")]
         [AllowAnonymous]
-        public async Task<IActionResult> Get([FromQuery] bool incluirHateOas = true)
+        [ServiceFilter(typeof(HateOasAutoresFilterAttribute))]
+        public async Task<ActionResult<List<AutorDto>>> Get()
         {
             var autores = await _dataContext.Autores.ToListAsync();
-            var dtos = _mapper.Map<List<AutorDto>>(autores);
-            
-            if (incluirHateOas)
-            {
-                var esAdmin = await _authorizationService.AuthorizeAsync(User, "esAdmin");
-                //dtos.ForEach(dto => GenerarEnlaces(dto,));
+            return _mapper.Map<List<AutorDto>>(autores);
 
-                var resultado = new ColeccionRecursos<AutorDto> { Recursos = dtos };
-                resultado.Enlaces.Add(new DatoHateOas(enlace: Url.Link("obtenerAutores", new { }),
-                    descripcion: "self",
-                    metodo: "GET"));
-
-                if (esAdmin.Succeeded)
-                {
-                    resultado.Enlaces.Add(new DatoHateOas(enlace: Url.Link("crearAutor", new { }),
-                    descripcion: "crear-autor",
-                    metodo: "POST"));
-                }
-                return Ok(resultado);
-            }
-            
-            
-            return Ok(dtos);
         }
 
 
-        [HttpGet("{id:int}", Name = "obtenerAutor")]
+        [HttpGet("{id:int}", Name = "obtenerAutorv1")]
         [AllowAnonymous]
         [ServiceFilter(typeof(HateOasAutoresFilterAttribute))]
-        public async Task<ActionResult<AutorDtoConLibros>> Get(int id, [FromHeader] string incluirHateOas)
+        public async Task<ActionResult<AutorDtoConLibros>> Get(int id)
         {
             var autor = await _dataContext.Autores
                 .Include(x => x.AutoresLibros)
@@ -76,16 +58,16 @@ namespace WebApiAutores.Controllers
             return dto;
         }
 
-        [HttpGet("{nombre}", Name = "obtenerAutorPorNombre")]
-        public async Task<ActionResult<List<AutorDto>>> Get(string nombre)
-        {
-            var autores = await _dataContext.Autores.Where(x => x.Nombre.Contains(nombre)).ToListAsync();
+        //[HttpGet("{nombre}", Name = "obtenerAutorPorNombre")]
+        //public async Task<ActionResult<List<AutorDto>>> Get([FromBody] string nombre)
+        //{
+        //    var autores = await _dataContext.Autores.Where(x => x.Nombre.Contains(nombre)).ToListAsync();
 
-            return _mapper.Map<List<AutorDto>>(autores);
-        }
+        //    return _mapper.Map<List<AutorDto>>(autores);
+        //}
 
 
-        [HttpPost(Name = "crearAutor")]
+        [HttpPost(Name = "crearAutorv1")]
         public async Task<ActionResult> Post(AutoCreacionDto autoCreacionDto)
         {
             var autorConMismoNombreExiste = await _dataContext.Autores.AnyAsync(x => x.Nombre == autoCreacionDto.Nombre);
@@ -103,7 +85,7 @@ namespace WebApiAutores.Controllers
             return CreatedAtRoute("obtenerAutor", new { id = autor.Id }, autorDto);
         }
 
-        [HttpPut("{id:int}", Name = "actualizarAutor")]
+        [HttpPut("{id:int}", Name = "actualizarAutorv1")]
         public async Task<ActionResult> Put(AutoCreacionDto autoCreacionDto, int id)
         {
             var existe = await _dataContext.Autores.AnyAsync(x => x.Id == id);
@@ -120,7 +102,7 @@ namespace WebApiAutores.Controllers
             return NoContent();
         }
 
-        [HttpDelete("{id:int}", Name = "borrarAutor")]
+        [HttpDelete("{id:int}", Name = "borrarAutorv1")]
         public async Task<ActionResult> Delete(int id)
         {
 
@@ -135,9 +117,5 @@ namespace WebApiAutores.Controllers
             await _dataContext.SaveChangesAsync();
             return NoContent();
         }
-
-        
-
-
     }
 }
