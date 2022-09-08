@@ -6,34 +6,45 @@ using Microsoft.EntityFrameworkCore;
 using WebApiAutores.Data;
 using WebApiAutores.DTOs;
 using WebApiAutores.Entities;
+using WebApiAutores.Filtros;
+using WebApiAutores.Utilidades;
 
-namespace WebApiAutores.Controllers
+namespace WebApiAutores.Controllers.V1
 {
     [ApiController]
     [Route("api/autores")]
+    [CabeceraEstaPresente("x-version", "1")]
+    [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "EsAdmin")]
     public class AutoresController : ControllerBase
     {
         private readonly DataContext _dataContext;
         private readonly IMapper _mapper;
-        private readonly IConfiguration _configuration;
+        private readonly IAuthorizationService _authorizationService;
 
-        public AutoresController(DataContext context, IMapper mapper, IConfiguration configuration)
+        public AutoresController(DataContext context, IMapper mapper, IAuthorizationService authorizationService)
         {
             _dataContext = context;
             _mapper = mapper;
-            _configuration = configuration;
+            _authorizationService = authorizationService;
         }
 
-        [HttpGet]
-        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
-        public async Task<ActionResult<List<AutorDto>>> Get()
+        [HttpGet(Name = "obtenerAutoresv1")]
+        [AllowAnonymous]
+        [ServiceFilter(typeof(HateOasAutoresFilterAttribute))]
+        public async Task<ActionResult<List<AutorDto>>> Get([FromQuery] PaginacionDTO paginacionDTO)
         {
-            var autores = await _dataContext.Autores.ToListAsync();
+            var queryable = _dataContext.Autores.AsQueryable();
+            await HttpContext.InsertarParametrosPaginacionCabecera(queryable);
+            var autores = await queryable.OrderBy(autor => autor.Nombre).Paginar(paginacionDTO).ToListAsync();
             return _mapper.Map<List<AutorDto>>(autores);
         }
 
 
-        [HttpGet("{id:int}", Name = "obtenerAutor")]
+        [HttpGet("{id:int}", Name = "obtenerAutorv1")]
+        [AllowAnonymous]
+        [ServiceFilter(typeof(HateOasAutoresFilterAttribute))]
+        //[ProducesResponseType(404)]
+        //[ProducesResponseType(200)]
         public async Task<ActionResult<AutorDtoConLibros>> Get(int id)
         {
             var autor = await _dataContext.Autores
@@ -46,19 +57,11 @@ namespace WebApiAutores.Controllers
                 return NotFound();
             }
 
-            return _mapper.Map<AutorDtoConLibros>(autor);
+            var dto = _mapper.Map<AutorDtoConLibros>(autor);
+            return dto;
         }
 
-        [HttpGet("{nombre}")]
-        public async Task<ActionResult<List<AutorDto>>> Get(string nombre)
-        {
-            var autores = await _dataContext.Autores.Where(x => x.Nombre.Contains(nombre)).ToListAsync();
-
-            return _mapper.Map<List<AutorDto>>(autores);
-        }
-
-
-        [HttpPost]
+        [HttpPost(Name = "crearAutorv1")]
         public async Task<ActionResult> Post(AutoCreacionDto autoCreacionDto)
         {
             var autorConMismoNombreExiste = await _dataContext.Autores.AnyAsync(x => x.Nombre == autoCreacionDto.Nombre);
@@ -76,7 +79,7 @@ namespace WebApiAutores.Controllers
             return CreatedAtRoute("obtenerAutor", new { id = autor.Id }, autorDto);
         }
 
-        [HttpPut("{id:int}")]
+        [HttpPut("{id:int}", Name = "actualizarAutorv1")]
         public async Task<ActionResult> Put(AutoCreacionDto autoCreacionDto, int id)
         {
             var existe = await _dataContext.Autores.AnyAsync(x => x.Id == id);
@@ -93,7 +96,12 @@ namespace WebApiAutores.Controllers
             return NoContent();
         }
 
-        [HttpDelete("{id:int}")]
+        /// <summary>
+        /// Borra un autor
+        /// </summary>
+        /// <param name="id">Id del autor a borrar</param>
+        /// <returns></returns>
+        [HttpDelete("{id:int}", Name = "borrarAutorv1")]
         public async Task<ActionResult> Delete(int id)
         {
 
@@ -108,7 +116,5 @@ namespace WebApiAutores.Controllers
             await _dataContext.SaveChangesAsync();
             return NoContent();
         }
-
-
     }
 }
