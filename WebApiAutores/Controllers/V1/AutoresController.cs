@@ -31,17 +31,20 @@ namespace WebApiAutores.Controllers.V1
         [HttpGet(Name = "obtenerAutoresv1")]
         [AllowAnonymous]
         [ServiceFilter(typeof(HateOasAutoresFilterAttribute))]
-        public async Task<ActionResult<List<AutorDto>>> Get()
+        public async Task<ActionResult<List<AutorDto>>> Get([FromQuery] PaginacionDTO paginacionDTO)
         {
-            var autores = await _dataContext.Autores.ToListAsync();
+            var queryable = _dataContext.Autores.AsQueryable();
+            await HttpContext.InsertarParametrosPaginacionCabecera(queryable);
+            var autores = await queryable.OrderBy(autor => autor.Nombre).Paginar(paginacionDTO).ToListAsync();
             return _mapper.Map<List<AutorDto>>(autores);
-
         }
 
 
         [HttpGet("{id:int}", Name = "obtenerAutorv1")]
         [AllowAnonymous]
         [ServiceFilter(typeof(HateOasAutoresFilterAttribute))]
+        //[ProducesResponseType(404)]
+        //[ProducesResponseType(200)]
         public async Task<ActionResult<AutorDtoConLibros>> Get(int id)
         {
             var autor = await _dataContext.Autores
@@ -57,15 +60,6 @@ namespace WebApiAutores.Controllers.V1
             var dto = _mapper.Map<AutorDtoConLibros>(autor);
             return dto;
         }
-
-        //[HttpGet("{nombre}", Name = "obtenerAutorPorNombre")]
-        //public async Task<ActionResult<List<AutorDto>>> Get([FromBody] string nombre)
-        //{
-        //    var autores = await _dataContext.Autores.Where(x => x.Nombre.Contains(nombre)).ToListAsync();
-
-        //    return _mapper.Map<List<AutorDto>>(autores);
-        //}
-
 
         [HttpPost(Name = "crearAutorv1")]
         public async Task<ActionResult> Post(AutoCreacionDto autoCreacionDto)
@@ -102,6 +96,11 @@ namespace WebApiAutores.Controllers.V1
             return NoContent();
         }
 
+        /// <summary>
+        /// Borra un autor
+        /// </summary>
+        /// <param name="id">Id del autor a borrar</param>
+        /// <returns></returns>
         [HttpDelete("{id:int}", Name = "borrarAutorv1")]
         public async Task<ActionResult> Delete(int id)
         {

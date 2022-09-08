@@ -1,10 +1,12 @@
 ﻿using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Infrastructure;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using System.IdentityModel.Tokens.Jwt;
+using System.Reflection;
 using System.Text;
 using System.Text.Json.Serialization;
 using WebApiAutores.Data;
@@ -13,6 +15,7 @@ using WebApiAutores.Middlewares;
 using WebApiAutores.Servicios;
 using WebApiAutores.Utilidades;
 
+[assembly: ApiConventionType(typeof(DefaultApiConventions))]
 namespace WebApiAutores;
 
 public class Startup
@@ -53,7 +56,17 @@ public class Startup
 
         services.AddSwaggerGen(c =>
         {
-            c.SwaggerDoc("v1", new OpenApiInfo { Title = "WebAPIAutores", Version = "v1" });
+            c.SwaggerDoc("v1", new OpenApiInfo { 
+                Title = "WebAPIAutores", 
+                Version = "v1", 
+                Description = "WebApi para practicar .NET",
+                Contact = new OpenApiContact
+                {
+                    Email = "fuerasantacode@outlook.com",
+                    Name = "Paco",
+                    Url = new Uri("https://github.com/franciscoluna94")
+                }
+            });
             c.SwaggerDoc("v2", new OpenApiInfo { Title = "WebAPIAutores", Version = "v2" });
             c.OperationFilter<AgregarParametroHateOas>();
             c.OperationFilter<AgregarParametroXVersion>();
@@ -82,6 +95,10 @@ public class Startup
                     }
                 });
 
+            var archivoXML = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
+            var rutaXML = Path.Combine(AppContext.BaseDirectory, archivoXML);
+            c.IncludeXmlComments(rutaXML);
+
         });
 
 
@@ -99,7 +116,7 @@ public class Startup
         {
             opciones.AddDefaultPolicy(builder =>
             {
-                builder.WithOrigins("https://apirequest.io").AllowAnyMethod().AllowAnyHeader().WithExposedHeaders();
+                builder.WithOrigins("https://apirequest.io").AllowAnyMethod().AllowAnyHeader().WithExposedHeaders(new string[] { "cantidadTotalRegistros" });
             });
         });
 
