@@ -125,6 +125,8 @@ public class Startup
         services.AddTransient<GeneradorEnlaces>();
         services.AddTransient<HateOasAutoresFilterAttribute>();
         services.AddSingleton<IActionContextAccessor, ActionContextAccessor>();
+
+        services.AddApplicationInsightsTelemetry(Configuration["ApplicationInsights:ConnectonString"]);
     }
 
     public void Configure(IApplicationBuilder app, IWebHostEnvironment env, ILogger<Startup> logger)
